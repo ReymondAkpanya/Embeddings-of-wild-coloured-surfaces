@@ -245,6 +245,7 @@ return true;
 end proc:
 
 
+
 HasVertexInPlane:=proc(surface,face1,face2,coor)
 local i,j,v1,v2,v,n,verts,edges,kk,k,eqn_of_plane,ans,w,M,eq,count,c;
 c:=coor;
@@ -391,24 +392,25 @@ end proc:
 
 
 findPossibleTetraTorus:=proc(cactiList,id)
-local g,res,cac,s,i,sol,temp,solutions,aa,res2,bb,j,k,fac,facetemp,res3;res:=[];res2:=[];i:=1;  
+local g,res,cac,s,i,sol,temp,solutions,aa,res2,bb,j,k,fac,facetemp,res3,temp1;res:=[];res2:=[];i:=1;  
 for cac in cactiList do 
-  facetemp:=[]; temp:=[cac];  print("i=",i);j:=1;
+  facetemp := []; temp1 := []; temp:=[[cac]];  print("i=",i);j:=1;
   sol:=TetraTorusTest(cac,id); 
   for k from 1 to nops(sol[1]) do 
     aa:=subs(sol[1][k][1],a); print("j=",j);
     bb:=subs(sol[1][k][2],b); 
     if Im(aa)=0 and Im(bb)=0 then 
-      temp:=[op(temp),sol[1][k]]; print("temp added");
-      facetemp:=[op(facetemp),sol[2][k]]; 
+      temp1 := [op(temp1), sol[1][k]]; print("temp added");
+      facetemp:=[op(facetemp),sol[2][k]]; print(facetemp);
     end if ;j:=j+1;
   end do;
+  temp := [op(temp), temp1, facetemp]; 
   i:=i+1;
-  if nops(temp)=1 then 
+  if nops(temp[2])=0 then 
     res2:=[op(res2),cac]; 
   else 
-    res:=[op(res),[op(temp),op(facetemp)]]; 
-  end if ;
+    res:=[op(res),temp]; 
+  end if ; 
 end do ;
 return res,res2;
 end proc:
@@ -462,55 +464,49 @@ end do;
 verts:=[op(verts),op(reflected_verts)];   
 surf:=NewSurface();   
 DefineEmbedding(surf,evala(cc),"faces"=[op(fac),op(newfac)],"vertices"=verts); 
-return evala(cc),SurfaceInfo,surf; 
+return surf,evala(cc),Vertices(surf),Faces(surf); 
 end proc:
 
 
-#torusfile_gen := proc(surfaces, id, filename) 
-#local i, j, cac, res, sol, temp, res2, fd, s, k, aa, bb, facetemp, l, cc, ss; 
-#i := 1; 
-#res := []; 
-#res2 := []; 
-#fd := fopen(filename, WRITE); 
-#for s in surfaces do print("i" = i); 
-#facetemp := []; 
-#cac := ConstructCactus(s); 
-#temp := [cac]; 
-#j := 1; 
-#sol := TetraTorusTest(cac, id); 
-#for k to nops(sol[1]) do 
-#aa := subs(sol[1][k][1], a); 
-#bb := subs(sol[1][k][2], b); 
-#if Im(aa) = 0 and Im(bb) = 0 then 
-#temp := [op(temp), sol[1][k]]; 
-#facetemp := [op(facetemp), sol[2][k]]; 
-#end if; 
-#print("j" = j); 
-#j := j + 1; 
-#end do; 
-#i := i + 1; 
-#if nops(temp) = 1 then 
-#res2 := [op(res2), cac]; 
-#else 
-#fprintf(fd, "Number:"); fprintf(fd, String(i)); 
-#fprintf(fd, "\n"); fprintf(fd, "Surface:"); fprintf(fd, String(s)); 
-#fprintf(fd, "\n"); fprintf(fd, "FacesOnTheSamePlane:"); fprintf(fd, String(facetemp)); 
-#fprintf(fd, "\n"); fprintf(fd, "solution:"); fprintf(fd, String(temp)); 
-#res := [op(res), temp, op(facetemp)]; 
-#end if; 
-#end do; 
-#fclose(fd); 
-#return res, res2; 
-#end proc:
-# 
+torusfile_gen := proc(surfaces, id, filename) 
+local i, j, cac, res, sol, temp, res2, fd, s, k, aa, bb, facetemp, l, cc, ss, temp1, refres, mir; 
+i := 1; res := []; res2 := []; refres := []; 
+fd := fopen(filename, WRITE); 
+for s in surfaces do print("i" = i); 
+  facetemp := []; temp1 := []; 
+  cac := ConstructCactus(s); 
+  temp := [[cac]]; j := 1; 
+  sol := TetraTorusTest(cac, id); 
+  for k to nops(sol[1]) do 
+    aa := subs(sol[1][k][1], a); 
+    bb := subs(sol[1][k][2], b); 
+    if Im(aa) = 0 and Im(bb) = 0 then 
+      temp1 := [op(temp1), sol[1][k]]; 
+      facetemp := [op(facetemp), sol[2][k]]; 
+    end if; print("j" = j); j := j + 1; 
+  end do; 
+  temp := [op(temp), temp1, facetemp]; 
+  i := i + 1; 
+  if nops(temp[2]) = 0 then 
+    res2 := [op(res2), cac]; 
+  else 
+    fprintf(fd, "Number:"); fprintf(fd, String(i)); 
+    for l to nops(temp[2]) do 
+      ss := NewSurface(); 
+      cc := evala(subs({a = subs(temp[2][l], a), b = subs(temp[2][l], b)}, CoordinateMatrix(op(temp[1]), 1, "listlist" = true))); 
+      DefineEmbedding(ss, cc, "vertices" = Vertices(op(temp[1])), "faces" = Faces(op(temp[1]))); 
+      mir := MirrorForTorus(ss, op(temp[3][l])); 
+      fprintf(fd, "\n"); fprintf(fd, "Coordinates:"); fprintf(fd, String(mir[2])); 
+      fprintf(fd, "\n"); fprintf(fd, "Vertices:"); fprintf(fd, String(mir[3])); 
+      fprintf(fd, "\n"); fprintf(fd, "VerticesofAllFaces:"); fprintf(fd, String(mir[4])); 
+      refres := [op(refres), mir[1]]; 
+    end do; 
+    res := [op(res), temp]; 
+  end if; 
+end do; 
+fclose(fd); 
+return refres; 
+end proc:
 
-#torusfile_gen(surfaces, 1, "Torus_6cacti_before_mirror");
-## 
-#
-#rr:=[[Surface, {a = RootOf(_Z^2 + _Z - 1), b = RootOf(5*_Z^2 - 4*RootOf(_Z^2 + _Z - 1) - 7)}, [[4, 6, 8], [7, 9, 10]]]]
-#
-#rr[1][3];
-#for l from 2 to nops(res[1]) do      s:=NewSurface();       cc:=subs({a=subs(res[1][l],a),b=subs(res[1][l],b)},CoordinateMatrix(res[1][1],1,"listlist"=true));      DefineEmbedding(s,cc,"vertices"=Vertices(res[1][1]),"faces"=Faces(res[1][1]));      ss:=MirrorForTorus(s,op(res[1][3][l-1]));      fprintf(fd,"\\n"); fprintf(fd,"Mirrored:"); fprintf(fd,String(ss[2],ss[1]));     end do;
-
-
-
+#read "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti10.g"
+#sol := torusfile_gen(surfaces, 1, "test");
