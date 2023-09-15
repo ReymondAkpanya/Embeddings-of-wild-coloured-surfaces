@@ -269,21 +269,30 @@ end if;
 end proc: 
 
 
-AreAllVerticesOnOneSideOfPlane:=proc(surface,face1,face2,coor) # plane defined by face1 anfd face2
-local i,v1,v2,v,n,verts,edges,kk,k,eqn_of_plane,ans,w,M,eq,count,c,temp;
-c:=evala(convert(coor,radical));
-count:=0;
-v:=c[face1[1]]; v1:=c[face1[2]]-v; v2:=c[face1[3]]-v;
-n:=convert(CrossProduct(<v1>,<v2>),Vector);
-verts:={op(Vertices(surface))} minus {op(face1),op(face2)};
-temp:=map(x->(<x>.n)-(<v>.n),map(j->c[j],verts));
-for i from 1 to nops(temp) do 
-  if 10^(-10)< evalf(temp[i]) and evalf(temp[i])<(-10^(-10)) then 
-    return false;
-  end if;
-end do;
-return true;
-end proc: 
+AreAllVerticesOnOneSideOfPlane := proc(surface, face1, face2, coor) 
+local i, v1, v2, v, n, verts, edges, ans, w, M, eq, c, temp, count1, count2, j; 
+c := evala(convert(coor, radical)); 
+count1 := 0; count2 := 0; temp := []; 
+v := c[face1[1]]; 
+v1 := c[face1[2]] - v; v2 := c[face1[3]] - v; 
+n := CrossProduct(v1, v2); 
+verts := {op(Vertices(surface))} minus {op(face1), op(face2)}; 
+for j to nops(verts) do 
+  temp := [op(temp), c[verts[j]][1]*n[1] + c[verts[j]][2]*n[2] + c[verts[j]][3]*n[3] - v[1]*n[1] - v[2]*n[2] - v[3]*n[3]]; 
+end do; 
+for i to nops(temp) do 
+  if 0 < evalf(temp[i]) then 
+    count1 := count1 + 1; 
+  else 
+    count2 := count2 + 1; 
+  end if; 
+end do; 
+if count2 < count1 and count2 <> 0 or count1 < count2 and count1 <> 0 or count1 = count2 then 
+  return false; 
+else 
+  return true; 
+end if; 
+end proc:
 
 
 HasEdgeInPlane := proc(surface, face1, face2) 
@@ -299,31 +308,8 @@ return false;
 end proc:
 
 
-TetraTorusTesting := proc(surface, face1, face2, coor, id)   #without self intersection
-local m, n, o, p, q, r; 
-o := HasVertexInPlane(surface, face1, face2, coor); 
-p := HasEdgeInPlane(surface, face1, face2); 
-if o = false and p = false then 
-  if id = 1 then 
-    m := IsVertexfaithful(coor); 
-    q := AreAllVerticesOnOneSideOfPlane(surface, face1, face2, coor); 
-    n := HasSelfIntersections1(surface, coor); 
-    if m = true and q = true and n = false then 
-      return true; 
-    end if; 
-  elif id = 4 then 
-    r := IsVertexfaithful_OnlyFaces(coor, face1, face2); 
-    if r then 
-      return true; 
-    end if; 
-  end if; 
-end if; 
-return false; 
-end proc:
 
-
-
-TetraTorusTesting2 := proc(surface, face1, face2, coor, id)  #everthing
+TetraTorusTesting := proc(surface, face1, face2, coor, id)  #everthing
 local m, n, o, p, q, r; 
 o := HasVertexInPlane(surface, face1, face2, coor); 
 p := HasEdgeInPlane(surface, face1, face2); 
@@ -337,7 +323,7 @@ if o = false and p = false then           #id=1: with mirror symmetry and withou
     end if; 
   elif id=2 then                              #id=2: with mirror symmetry with self intersection        
     m:=IsVertexfaithful(coor);        
-    if m then          
+    if m=true then          
       return true;        
     end if;     
   elif id=3 then                               #id=3: without mirror symmetry and without self intersection        
@@ -348,7 +334,7 @@ if o = false and p = false then           #id=1: with mirror symmetry and withou
     end if;
   elif id = 4 then                             #id=4: without mirror symmetry with self intersection
     r := IsVertexfaithful_OnlyFaces(coor, face1, face2); 
-    if r then 
+    if r=true then 
       return true; 
     end if; 
   end if; 
@@ -376,7 +362,7 @@ for i in [1,2,3] do
         aa:=subs(sol,a);bb:=subs(sol,b); 
         if  type(evalf(aa),float) and type(evalf(bb),float) then  
           coor:=evala(subs({a=aa,b=bb},CoordinateMatrix(surface,1,"listlist"=true)));  
-          bool:=TetraTorusTesting2(surface,face1,face2,coor,id);
+          bool:=TetraTorusTesting(surface,face1,face2,coor,id);
           if aa<>0 and bb<>0 and bool=true then 
             #s:=NewSurface();DefineEmbedding(s,subs({a=aa,b=bb},CoordinateMatrix(surface,1,"listlist"=true)),"vertices"= Vertices(surface),"faces"=Faces(surface));
             print("res upated",face1,face2);
@@ -507,6 +493,82 @@ end do;
 fclose(fd); 
 return refres; 
 end proc:
+
+TetraTorusTest_all_id:=proc(surface)
+local g,vertices,res,faces1,faces2,face1,face2,dets,solution,sol,aa,bb,i,j,coor,s,res1,bool,k;
+vertices:=VerticesOfDegreeThree(surface);res:=[]; res1:=[];
+faces1:=FacesOfVertex(surface,vertices[1]);
+faces2:=FacesOfVertex(surface,vertices[2]);
+for i in [1,2,3] do
+  for j in [1,2,3] do
+    face1:=faces1[i]; 
+    face2:=faces2[j];
+    if nops({op(face1)} intersect {op(face2)})=0 then 
+      dets:=help_check(surface,face1,face2);
+      solution := solve([dets[1] = 0, dets[2] = 0, dets[3] = 0],{a,b}); 
+      for sol in solution do 
+        aa:=subs(sol,a);bb:=subs(sol,b); 
+        if  type(evalf(aa),float) and type(evalf(bb),float) then  
+          coor:=evala(subs({a=aa,b=bb},CoordinateMatrix(surface,1,"listlist"=true)));  
+          for k in [1,2] do
+            bool:=TetraTorusTesting(surface,face1,face2,coor,k);
+            if aa<>0 and bb<>0 and bool=true then 
+              #s:=NewSurface();DefineEmbedding(s,subs({a=aa,b=bb},CoordinateMatrix(surface,1,"listlist"=true)),"vertices"= Vertices(surface),"faces"=Faces(surface));
+              print("res upated",face1,face2);
+              res:=[op(res),sol]; res1:=[op(res1),[face1,face2]];       
+            end if;
+          end do;
+        end if; 
+      end do; 
+    end if;
+  end do;
+end do;
+return res,res1; 
+end proc:
+
+
+torusfile_gen_time := proc(surfaces, filename) 
+local i, j, cac, res, sol, temp, res2, fd, s, k, aa, bb, facetemp, l, cc, ss, temp1, refres, mir; 
+i := 1; res := []; res2 := []; refres := []; 
+fd := fopen(filename, WRITE); 
+for s in surfaces do print("i" = i); 
+  facetemp := []; temp1 := []; 
+  cac := ConstructCactus(s); 
+  temp := [[cac]]; j := 1; 
+  sol := TetraTorusTest_all_id(cac); 
+  for k to nops(sol[1]) do 
+    aa := subs(sol[1][k][1], a); 
+    bb := subs(sol[1][k][2], b); 
+    if Im(aa) = 0 and Im(bb) = 0 then 
+      temp1 := [op(temp1), sol[1][k]]; 
+      facetemp := [op(facetemp), sol[2][k]]; 
+    end if; print("j" = j); j := j + 1; 
+  end do; 
+  temp := [op(temp), temp1, facetemp]; 
+  i := i + 1; 
+  if nops(temp[2]) = 0 then 
+    res2 := [op(res2), cac]; 
+  else 
+    fprintf(fd, "Number:"); fprintf(fd, String(i)); 
+    for l to nops(temp[2]) do 
+      ss := NewSurface(); 
+      cc := evala(subs({a = subs(temp[2][l], a), b = subs(temp[2][l], b)}, CoordinateMatrix(op(temp[1]), 1, "listlist" = true))); 
+      DefineEmbedding(ss, cc, "vertices" = Vertices(op(temp[1])), "faces" = Faces(op(temp[1]))); 
+      mir := MirrorForTorus(ss, op(temp[3][l])); 
+      fprintf(fd, "\n"); fprintf(fd, "Coordinates:"); fprintf(fd, String(mir[2])); 
+      fprintf(fd, "\n"); fprintf(fd, "Vertices:"); fprintf(fd, String(mir[3])); 
+      fprintf(fd, "\n"); fprintf(fd, "VerticesofAllFaces:"); fprintf(fd, String(mir[4])); 
+      refres := [op(refres), mir[1]]; 
+    end do; 
+    res := [op(res), temp]; 
+  end if; 
+end do; 
+fclose(fd); 
+return refres; 
+end proc:
+
+
+#torusfile_gen_time := proc(surfaces, filename) 
 
 #read "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti10.g"
 #sol := torusfile_gen(surfaces, 1, "test");
