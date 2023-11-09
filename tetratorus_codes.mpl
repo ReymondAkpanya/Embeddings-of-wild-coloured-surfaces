@@ -450,6 +450,7 @@ end do;
 verts:=[op(verts),op(reflected_verts)];   
 surf:=NewSurface();   
 DefineEmbedding(surf,evala(cc),"faces"=[op(fac),op(newfac)],"vertices"=verts); 
+RemoveFace(surf,face1); RemoveFace(surf,face2);
 return surf,evala(cc),Vertices(surf),Faces(surf); 
 end proc:
 
@@ -572,3 +573,10 @@ end proc:
 
 #read "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti10.g"
 #sol := torusfile_gen(surfaces, 1, "test");
+
+
+with(CodeTools);
+read "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti574.g":
+nops(surfaces);
+#sol:=torusfile_gen(surfaces[141..196],1,"Cacti70_id1_3"); 
+sol := Usage(torusfile_gen_time(surfaces[701..800], "Cacti574_10_mirror"), output = ['cputime', 'realtime', 'output']);
