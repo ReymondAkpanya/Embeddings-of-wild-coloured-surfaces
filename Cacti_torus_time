@@ -1,0 +1,57 @@
+Cacti70: 196 surfaces: Time for both self intersected and not self intersected tori with mirror symmetry.
+
+1 to 100: CPU time 12.10m, real time 10.33m
+
+101 to 135: CPU time 5.36m, real time 5.30m
+
+136 to 140: CPU time 33.49m, real time 31.94m
+
+141 to 160: CPU time 13.72m, real time 10.38m
+
+161 to 180: CPU time 9.56m, real time 7.09m
+
+181 to 189: CPU time 20.8m, real time 17.60m
+
+190 to 196: Have been taking very long to compute! Try again for each surface overnight.
+
+
+#####################################################################
+
+Cacti196: 574 surfaces: Time for both self intersected and not self intersected tori with mirror symmetry.
+
+1 to 50: CPU time 8.57m, real time 7.23m
+
+51 to 150: CPU time 34.08m, real time 28.12m
+
+151 to 250: CPU time 44.45m, real time 35.07m
+
+251 to 350: CPU time 81.70m, real time 66.83m
+
+351 to 450: CPU time 68.77m, real time 54.17m
+
+451 to 550: CPU time 103.63m, real time 76.37m
+
+551 to 574: CPU time 33.95m, real time 23.53m
+
+Total CPU time: 375.15m,
+Total real time: 291.32m
+
+######################################################################
+
+Cacti574: 1681 surfaces: Time for both self intersected and not self intersected tori with mirror symmetry.
+
+1 to 50: CPU time 66.54m, real time 53.99m
+51 to 100: CPU time 40.25m, real time 27.59m
+101 to 150: CPU time 62.02m, real time 41.51m
+151 to 200: CPU time 100.16m, real time 105.54m
+201 to 300: CPU time 2.24h, real time 110.56m
+301 to 400: CPU time 5.50h, real time 5.36h
+401 to 500: CPU time 7.55h, real time 4.35h
+501 to 600: CPU time 2.92h, real time 2.23h
+601 to 700: CPU time 4.48h, real time 2.84h
+701 to 800:
+
+
+
+
+
