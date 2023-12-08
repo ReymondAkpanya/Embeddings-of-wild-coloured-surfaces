@@ -558,7 +558,7 @@ for s in surfaces do print("i" = i);
       mir := MirrorForTorus(ss, op(temp[3][l])); 
       fprintf(fd, "\n"); fprintf(fd, "Coordinates:"); fprintf(fd, String(mir[2])); 
       fprintf(fd, "\n"); fprintf(fd, "Vertices:"); fprintf(fd, String(mir[3])); 
-      fprintf(fd, "\n"); fprintf(fd, "VerticesofAllFaces:"); fprintf(fd, String(mir[4])); 
+      fprintf(fd, "\n"); fprintf(fd, "VerticesofAllFaces:"); fprintf(fd, String(mir[4])); fprintf(fd, "\n");
       refres := [op(refres), mir[1]]; 
     end do; 
     res := [op(res), temp]; 
@@ -576,7 +576,7 @@ end proc:
 
 
 with(CodeTools);
-read "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti574.g":
+read "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti196.g":
 nops(surfaces);
 #sol:=torusfile_gen(surfaces[141..196],1,"Cacti70_id1_3"); 
-sol := Usage(torusfile_gen_time(surfaces[701..800], "Cacti574_10_mirror"), output = ['cputime', 'realtime', 'output']);
+sol := Usage(torusfile_gen_time(surfaces, "Cacti196_full_mirror"), output = ['cputime', 'realtime', 'output']);
