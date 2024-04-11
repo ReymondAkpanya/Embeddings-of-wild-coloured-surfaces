@@ -126,10 +126,6 @@ end proc:
 
 
 
-help_norm:=proc(v)
-return sqrt(v[1]^2+v[2]^2+v[3]^2);
-end proc:
-
 IsVertexfaithful:=proc(coordinates)
 local g,temp,i,coor;
 coor:=coordinates;
@@ -451,6 +447,7 @@ verts:=[op(verts),op(reflected_verts)];
 surf:=NewSurface();   
 DefineEmbedding(surf,evala(cc),"faces"=[op(fac),op(newfac)],"vertices"=verts); 
 RemoveFace(surf,face1); RemoveFace(surf,face2);
+#RemoveFace(surf,face1); RemoveFace(surf,face2);
 return surf,evala(cc),Vertices(surf),Faces(surf); 
 end proc:
 
@@ -494,6 +491,10 @@ end do;
 fclose(fd); 
 return refres; 
 end proc:
+
+
+
+
 
 TetraTorusTest_all_id:=proc(surface)
 local g,vertices,res,faces1,faces2,face1,face2,dets,solution,sol,aa,bb,i,j,coor,s,res1,bool,k;
@@ -574,9 +575,53 @@ end proc:
 #read "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti10.g"
 #sol := torusfile_gen(surfaces, 1, "test");
 
+torusfile_gen_id4 := proc(surfaces, id, filename) 
+local i, j, cac, res, sol, temp, res2, fd, s, k, aa, bb, facetemp, l, cc, ss, temp1, refres, mir; 
+i := 1; res := []; res2 := []; refres := []; 
+fd := fopen(filename, WRITE); 
+for s in surfaces do print("i" = i); 
+  facetemp := []; temp1 := []; 
+  cac := ConstructCactus(s); 
+  temp := [[cac]]; j := 1; 
+  sol := TetraTorusTest(cac, id); print("yes");
+  for k to nops(sol[1]) do 
+    aa := subs(sol[1][k][1], a); 
+    bb := subs(sol[1][k][2], b); 
+    if Im(aa) = 0 and Im(bb) = 0 then 
+      temp1 := [op(temp1), sol[1][k]]; 
+      facetemp := [op(facetemp), sol[2][k]]; 
+    end if; print("j" = j); j := j + 1; 
+  end do; 
+  temp := [op(temp), temp1, facetemp]; 
+  i := i + 1; 
+  if nops(temp[2]) = 0 then 
+    res2 := [op(res2), cac]; 
+  else 
+    fprintf(fd, "Number:"); fprintf(fd, String(i)); 
+    for l to nops(temp[2]) do 
+      ss := NewSurface(); 
+      cc := evala(subs({a = subs(temp[2][l], a), b = subs(temp[2][l], b)}, CoordinateMatrix(op(temp[1]), 1, "listlist" = true))); 
+      DefineEmbedding(ss, cc, "vertices" = Vertices(op(temp[1])), "faces" = Faces(op(temp[1]))); 
+      #mir := MirrorForTorus(ss, op(temp[3][l])); 
+      fprintf(fd, "\n"); fprintf(fd, "Coordinates:"); fprintf(fd, String(cc)); 
+      fprintf(fd, "\n"); fprintf(fd, "Vertices:"); fprintf(fd, String(Vertices(ss))); 
+      fprintf(fd, "\n"); fprintf(fd, "VerticesofAllFaces:"); fprintf(fd, String(Faces(ss))); 
+      refres := [op(refres), ss]; 
+    end do; 
+    res := [op(res), temp]; 
+  end if; 
+end do; 
+fclose(fd); 
+return refres; 
+end proc:
+
+
+
+
 
 with(CodeTools);
-read "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti196.g":
+read "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti574.g":
+
 nops(surfaces);
-#sol:=torusfile_gen(surfaces[141..196],1,"Cacti70_id1_3"); 
-sol := Usage(torusfile_gen_time(surfaces, "Cacti196_full_mirror"), output = ['cputime', 'realtime', 'output']);
+sol:=torusfile_gen(surfaces[1..2],2,"Cacti574_trial"); 
+#sol := Usage(torusfile_gen_time(surfaces, "Cacti574_id4"), output = ['cputime', 'realtime', 'output']);
