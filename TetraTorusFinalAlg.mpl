@@ -1,13 +1,13 @@
-#####################################################################################
+﻿#####################################################################################
 ###########
 ########### Beginning of Preamble
 ###########
 
 #restart:
-#libname := libname, "Path_To_SimplicialSurfaceEmbeddings_Package":
-#with(Involutive):with(LinearAlgebra):with(SimplicialSurfaceEmbeddings):
-#with(combinat):
-#SimplicialSurfaceEmbeddingsOptions("radical"=false);
+libname := libname, "/users/kirekod/maple/lib":
+with(Involutive):with(LinearAlgebra):with(SimplicialSurfaceEmbeddings):
+with(combinat):
+SimplicialSurfaceEmbeddingsOptions("radical",false);
 
 #read "/Users/reymondakpanya/Desktop/github_repos/Embeddings-of-wild-coloured-surfaces/Cacti25.g":
 
@@ -87,43 +87,34 @@ end proc:
 ###########
 
 HasIdentifiedFaces:=proc(surface,face1,face2) ### test
-  local g,coor,i,j;
-  coor:=CoordinateMatrix(surface,1,"listlist"=true, "radical"=false);
-  for i from 1 to 3 do
-#    print(select(is(help_norm(coor[face1[i]]-coor[face2[j]])=0),face2));
+  local g,coor,i,j; 
+  coor:=CoordinateMatrix(surface,1,"listlist"=true); 
+  for i from 1 to 3 do 
     if nops(select(j->is(help_norm(coor[face1[i]]-coor[j])=0),face2))<>1 then 
       return false;
     end if:
-  end do;
+  end do; 
   return true;
 end proc:
 
-IsVertexfaithful := proc(coor)  ## test 
-  local g, temp, i,c;
-  for c in coor do
-    temp := select(v -> is(help_norm(c - v)=0), coor);
-    if 1 < nops(temp) then
-      return false;
-    end if; 
-  end do;
-  return true; 
-end proc:
 
-HasSelfIntersections := proc(s, coor) 
+HasSelfIntersections := proc(surface,coor) 
   local f, e, v, v1, v2, w, w1, mat, sol, matin, c, temp;
-  c := coor;
-  for f in Faces(s) do 
-    for e in select(e -> not (e[1] in f or e[2] in f), Edges(s)) do 
+  c:=coor; #converting coor to radical might improve the algorithm
+  for f in Faces(surface) do  
+    for e in select(e -> not (e[1] in f or e[2] in f), Edges(surface)) do 
       v := c[f[1]]; 
       v1 := c[f[2]] - c[f[1]]; 
       v2 := c[f[3]] - c[f[1]]; 
       w := c[e[1]]; 
       w1 := c[e[2]] - c[e[1]]; 
       mat := <<v1> | <v2> | <-w1>>; 
-      if is(Determinant(mat)<>0) then 
-        matin := MatrixInverse(mat);
-        sol := matin . <w - v>;
+      if not(verify(Determinant(mat),0)) then  #is(Determinant(mat)<>0)
+        matin := MatrixInverse(mat); print("here");
+        sol := convert(matin . <w - v>,radical);   #sol := matin . <w - v>;
+        print("check");
         if (is(sol[3]>=0) and is(sol[3]<=1)) and is(sol[2]>=0) and is(sol[1]>=0) and is(sol[1] + sol[2] <= 1) then 
+          print("here1");
           return true;
         end if;
       end if; 
@@ -132,9 +123,19 @@ HasSelfIntersections := proc(s, coor)
   return false;
 end proc:
 
+IsVertexfaithful := proc(coor)  ## test 
+  local g, temp, i,c; 
+  for c in coor do
+    temp := select(v -> is(help_norm(c - v)=0), coor); 
+    if 1 < nops(temp) then
+      return false;
+    end if; 
+  end do;
+  return true; 
+end proc:
+
 AreIsometricPolyhedra:=proc(s1, s2)
   local g,coor1,coor2,b1,b2,M1,M2,gram1,gram2,l,i;
-  print(s1,s2);
   coor1:=CoordinateMatrix(s1,1,"listlist"=true, "radical"=false);l:=nops(coor1);
   coor2:=CoordinateMatrix(s2,1,"listlist"=true, "radical"=false);
   b1:=Barycenter(s1,1);
@@ -193,7 +194,7 @@ HasMirrorSymmetries:=proc(surface)
         end if; 
       end do;
       if bool then 
-        return true,e;  
+        return true; #e  
       end if;
     end if;
     vec1:=<coor[wings[1]]-(coor[e[1]]+1/2*(coor[e[2]]-coor[e[1]]))>; v:=<(coor[e[1]]+1/2*(coor[e[2]]-coor[e[1]]))>;
@@ -203,14 +204,19 @@ HasMirrorSymmetries:=proc(surface)
     if Determinant(M)<>0 then
       M:=MatrixInverse(M); bool:=true;
       scalars:=map(c->M.(<c>-v),coor);posScalars:=select(c->is(c[3]>0),scalars);negScalars:=select(c->is(c[3]<0),scalars);
-      if nops(negScalars) <> nops(posScalars) then bool:=false; end if;i:=1;
+      if nops(negScalars) <> nops(posScalars) then 
+        bool:=false; 
+      end if;
+      i:=1;
       while bool and i<=nops(posScalars) do
         sc:=posScalars[i];
         if nops(select(c->is(c[1]=sc[1]) and is(c[2]=sc[2]) and is(c[3]=-sc[3]) ,negScalars))=0 then 
           bool:=false;
         else i:=i+1;  end if;
       end do;
-      if bool then return true,e;  end if;
+      if bool then 
+        return true;#e  
+      end if;
     end if;
   end do;
   return false;
@@ -229,20 +235,20 @@ end proc:
 ########### Beginning of combinatorics
 ###########
 
-DegreesOfVertices := proc(surface)
-  local g, i, f, degrees, count; 
-  degrees := []; 
-  for i in Vertices(surface) do 
-    count := 0; 
-    for f in Faces(surface) do 
-      if member(i, f) then 
-        count := count + 1; 
-      end if; 
-    end do; 
-    degrees := [op(degrees), count]; 
-  end do; 
-  return degrees; 
-end proc:
+#DegreesOfVertices := proc(surface)
+#  local g, i, f, degrees, count; 
+#  degrees := []; 
+#  for i in Vertices(surface) do 
+#    count := 0; 
+#    for f in Faces(surface) do 
+#      if member(i, f) then 
+#        count := count + 1; 
+#      end if; 
+#    end do; 
+#    degrees := [op(degrees), count]; 
+#  end do; 
+#  return degrees; 
+#end proc:
 
 FacesOfVertex := proc(surface, v) 
   local g, res, faces, f; 
@@ -257,12 +263,12 @@ FacesOfVertex := proc(surface, v)
 end proc:
 
 VerticesOfDegreeThree := proc(surface)
-  local g, res, v,vertDegrees,vertices; 
+  local g, res, v,vertdeg,vert; 
   res := [];
-  vertices:=Vertices(surface);
-  vertDegrees:=VertexDegrees(surface);
-  for v in vertices do 
-    if vertDegrees[pos(vertices,v)] = 3 then 
+  vert:=Vertices(surface);
+  vertdeg:=VertexDegrees(surface);
+  for v in vert do 
+    if vertdeg[pos(vert,v)] = 3 then 
       res := [op(res), v]; 
     end if; 
   end do; 
@@ -296,12 +302,12 @@ end proc:
 
 AddTetra := proc(surf, i, vert, f)
   local g, c, v, v1, v2, v3, n, sol, vv,coor; 
-  coor:=CoordinateMatrix(surf,i,"listlist"=true, "radical"=false);
+  coor:=CoordinateMatrix(surf,i,"listlist"=true, "radical"=false); 
   v := <coor[f[1]]>;
   v1 := <coor[f[2]]> - <coor[f[1]]>;
   v2 := <coor[f[3]]> - <coor[f[1]]>;
   n := CrossProduct(v1, v2);
-  v3 := <coor[vert]>; 
+  v3 := <coor[vert]>; #print(v1,v2);
   vv := [t*n[1] + v3[1], t*n[2] + v3[2], t*n[3] + v3[3]];
   sol := solve(n[1]*vv[1] + n[2]*vv[2] + n[3]*vv[3] = v[1]*n[1] + v[2]*n[2] + v[3]*n[3], {t}); 
   return subs(sol, [2*t*n[1] + v3[1], 2*t*n[2] + v3[2], 2*t*n[3] + v3[3]]); 
@@ -332,7 +338,7 @@ ConstructCactus := proc(symbol)
   x := a; 
   h := b; 
   c := [[1/2, 0, 0], [-1/2, 0, 0], [(x^2 - 1)/(2 + 2*x^2), x/(1 + x^2), h], [-(x^2 - 1)/(2 + 2*x^2), -x/(1 + x^2), h]]; 
-  surf := NewSurface(); 
+  surf := NewSurface();
   DefineEmbedding(surf, c, "faces" = [[1, 2, 3], [1, 2, 4], [1, 3, 4], [2, 3, 4]], "vertices" = [1, 2, 3, 4]); 
   for g in symbol do 
     surf := AddT(surf, g[1], g[2]); 
@@ -396,14 +402,14 @@ MirrorSimplicialSurface:=proc(surface,face1,face2)  ### formally Mirror for toru
   end do;  
   verts:=[op(verts),op(reflected_verts)];   
   surf:=NewSurface();   
-  DefineEmbedding(surf,evala(cc),"faces"=[op(fac),op(newfac)],"vertices"=verts); 
+  DefineEmbedding(surf,cc,"faces"=[op(fac),op(newfac)],"vertices"=verts); 
   RemoveFace(surf,face1); RemoveFace(surf,face2);
-  return surf,evala(cc),Vertices(surf),Faces(surf); 
+  return surf; 
 end proc:
 
 
 IdentifyFaces:=proc(surface,face1,face2) ### identify faces ## new 
-  local g,verts,i,j,newVerts,coor,faces,newFaces,f,temp,s;
+  local g,verts,i,j,newVerts,coor,faces,newFaces,f,temp,s; #print("checkcheck");
   verts:=Vertices(surface);
   newVerts:=[];
   for i from 1 to nops(verts) do ## identify vertices in face1 and face2
@@ -417,10 +423,10 @@ IdentifyFaces:=proc(surface,face1,face2) ### identify faces ## new
     if not(member(newVerts,verts[i])) then 
       newVerts:=[op(newVerts),verts[i]];
     end if;
-  end do;
-  coor:=CoordinateMatrix(surface,1,"vertices"=verts, "radical"=false);
+  end do; 
+  coor:=CoordinateMatrix(surface,1,"vertices"=verts,"radical"=false);
   faces:=Faces(surface);
-  newFaces:=[];
+  newFaces:=[]; 
   for f in faces do
     if f<>face1 and f<>face2 then
       temp:=f;
@@ -434,9 +440,8 @@ IdentifyFaces:=proc(surface,face1,face2) ### identify faces ## new
       newFaces:=[op(newFaces),temp];
     end if; 
   end do;
-
   s:=NewSurface();
-  DefineEmbedding(s,evala(coor),"faces"=newFaces,"vertices"=newVerts);
+  DefineEmbedding(s,coor,"faces"=newFaces,"vertices"=newVerts);
   return s;
 end proc:
 
@@ -480,7 +485,7 @@ end proc:
 
 ConstructTorusFromCactus:=proc(surface) ## TODO 
   local g,vertices,res,faces1,faces2,face1,face2,tPolNonSelfIntMirror,tPolSelfIntMirror,tPolNonSelfInt,tPolSelfInt,
-  dets,solution,sol,aa,bb,i,j,coor,s,res1,bool,tempSurfaces,bool_mirror,bool_selfint,check_mirror,ss;
+  dets,solution,sol,aa,bb,i,j,coor,s,res1,bool,tempSurfaces,bool_mirror,bool_selfint,check_mirror,ss,coord;
   vertices:=VerticesOfDegreeThree(surface); # exactly two vertices 
   tPolNonSelfIntMirror:=[];
   tPolSelfIntMirror:=[];
@@ -488,58 +493,55 @@ ConstructTorusFromCactus:=proc(surface) ## TODO
   tPolSelfInt:=[]; ## change the same in paper
   faces1:=FacesOfVertex(surface,vertices[1]);
   faces2:=FacesOfVertex(surface,vertices[2]);
-  tempSurfaces:=[[],[],[],[]];
+  tempSurfaces:=[[],[],[],[]]; 
   for i in [1,2,3] do
     for j in [1,2,3] do
       face1:=faces1[i]; 
-      face2:=faces2[j];
+      face2:=faces2[j]; 
       if nops({op(face1)} intersect {op(face2)})=0 and not(HasEdgeInPlane(surface, face1, face2)) then 
         dets:=EqForFacesInSamePlane(surface,face1,face2);
         solution := solve([dets[1] = 0, dets[2] = 0, dets[3] = 0],{a,b});
         for sol in solution do 
-          aa:=subs(sol,a);bb:=subs(sol,b); 
+          aa:=subs(sol,a);
+          bb:=subs(sol,b); 
           if type(evalf(aa),float) and type(evalf(bb),float) and aa<>0 and bb<> 0 then 
-            coor:=evala(subs({a=aa,b=bb},CoordinateMatrix(surface,1,"listlist"=true,"radical"=false)));  
+            coor:=(subs({a=aa,b=bb},CoordinateMatrix(surface,1,"listlist"=true,"radical"=false)));  
             s:=NewSurface();
-            DefineEmbedding(s,coor,"vertices"= Vertices(surface),"faces"=Faces(surface));
-            if HasIdentifiedFaces(s,face1,face2) then
+            DefineEmbedding(s,coor,"faces"=Faces(surface),"vertices"= Vertices(surface)); 
+            if HasIdentifiedFaces(s,face1,face2) then 
               ss:=IdentifyFaces(s,face1,face2); ##check this function
               check_mirror:=true;
             else
-              ss:=MirrorSimplicialSurface(s,face1,face2);
+              ss:=MirrorSimplicialSurface(s,face1,face2); 
               check_mirror:=false;
-            end if;
-            if IsVertexfaithful(ss) then
-              bool_selfint:=HasSelfIntersections(ss);
+            end if;  
+            coord := CoordinateMatrix(ss,1,"listlist"=true,"radical"=false);
+            if IsVertexfaithful(coord) then
+              bool_selfint:=HasSelfIntersections(ss,coord);  print(HasSelfIntersections(ss,coord));
               if check_mirror then 
-                bool_mirror:=HasMirrorSymmetries(ss); #this gives true or false
+                bool_mirror:=HasMirrorSymmetries(ss); 
               else 
                 bool_mirror:=true; # surface comes from imposing mirror symetries so nothing to be done 
-              fi;
+              fi; 
               if not(bool_selfint) and bool_mirror then 
-                tempSurfaces[1]:=[op(tempSurfaces[1]),ss];
+                tempSurfaces[1]:=[op(tempSurfaces[1]),ss]; 
               elif bool_selfint and bool_mirror then
                 tempSurfaces[2]:=[op(tempSurfaces[2]),ss];
               elif not(bool_selfint) and not(bool_mirror) then 
                 tempSurfaces[3]:=[op(tempSurfaces[3]),ss];
               elif bool_selfint and not(bool_mirror) then
                 tempSurfaces[4]:=[op(tempSurfaces[4]),ss];
-              end if;
+              end if;  
             end if; 
           end if; 
         end do;  
       end if;
     end do;
-  end do;
-  print("here1",tempSurfaces);
-  tPolSelfIntMirror:=IsometryRepresentatives(tempSurfaces[1]);
-    print("here2");
-  tPolNonSelfIntMirror:=IsometryRepresentatives(tempSurfaces[2]);
-
-    print("here3");
-  tPolSelfInt:=IsometryRepresentatives(tempSurfaces[3]);
-    print("here4");
-  tPolNonSelfInt:=IsometryRepresentatives(tempSurfaces[4]); 
+  end do; print("check",tempSurfaces);
+  tPolNonSelfIntMirror:=IsometryRepresentatives(tempSurfaces[1]); 
+  tPolSelfIntMirror:=IsometryRepresentatives(tempSurfaces[2]); 
+  tPolNonSelfInt:=IsometryRepresentatives(tempSurfaces[3]); 
+  tPolSelfInt:=IsometryRepresentatives(tempSurfaces[4]); 
   return tPolNonSelfIntMirror,tPolSelfIntMirror,tPolNonSelfInt,tPolSelfInt;
 end proc:
 
@@ -550,45 +552,44 @@ end proc:
 ########### Beginning of Functions to construct database
 ###########
 
-torusfile_new:=proc(surfaces,filename)
-    local i,j,fd,cac,solution,k,co,verts,vof,res,s;
-    res:=[];
-    fd := fopen(filename, WRITE);
-    cac:=map(j->ConstructCactus(j),surfaces);
-    for id in [1,2,3,4] do
-        for i from 1 to nops(cac) do
-            solution:=findPossibleTetraTorus([cac[i]],id)[1];
-            if nops(solution)<>0 then
-                verts:= Vertices(op(solution[j][1])):
-                vof:=Faces(op(solution[j][1]));
-                resultCoordinates:=[];### 
-                for k from 1 to nops(solution[j][2]) do
-                    co:=subs({a = subs(solution[j][2][k], a), b = subs(solution[j][2][k], b)}, CoordinateMatrix(op(solution[j][1]), 1, "listlist" = true, "radical"=false));
-                    s:=NewSurface();
-                    DefineEmbedding(s,co,"vertices"=verts,"faces"=vof);         
-                    ####tests
-                    ## all algebraic solutions are stored in tempRes 
-                    ####
-                end do;
-                if nops(resultCoordinates )<>0 then 
-                    fprintf(fd, "SurfaceInfo "); fprintf(fd, String(i));fprintf(fd, ":\n");
-                    fprintf(fd, "vertices:="); fprintf(fd, String(verts)); fprintf(fd, ";\n");    
-                    fprintf(fd, "\n"); fprintf(fd, "verticesoffaces:="); fprintf(fd, String(vof));fprintf(fd, ";\n");
-                    for cc in resultCoordinates do  
-                        fprintf(fd,"-------------------------------------\n");
-                        fprintf(fd, "Coordinates:="); fprintf(fd, String(co));fprintf(fd, ";\n");
-                    end do; 
-                    fprintf(fd,"-------------------------------------------------------------------------------------\n");
-                end if;
-            end if;
-        end do;
-    end do;
-    fclose(fd);
-    return res;
-end proc:
-
+#torusfile_new:=proc(surfaces,filename)
+#    local i,j,fd,cac,solution,k,co,verts,vof,res,s,id,resultCoordinates,cc;
+#    res:=[];
+#    fd := fopen(filename, WRITE);
+#    cac:=map(j->ConstructCactus(j),surfaces);
+#    for id in [1,2,3,4] do
+#        for i from 1 to nops(cac) do
+#            solution:=findPossibleTetraTorus([cac[i]],id)[1];
+#            if nops(solution)<>0 then
+#                verts:= Vertices(op(solution[j][1])):
+#                vof:=Faces(op(solution[j][1]));
+#                resultCoordinates:=[];### 
+#                for k from 1 to nops(solution[j][2]) do
+#                    co:=subs({a = subs(solution[j][2][k], a), b = subs(solution[j][2][k], b)}, CoordinateMatrix(op(solution[j][1]), 1, "listlist" = true, "radical"=false));
+#                    s:=NewSurface();
+#                    DefineEmbedding(s,co,"vertices"=verts,"faces"=vof);         
+#                    ####tests
+#                    ## all algebraic solutions are stored in tempRes 
+#                    ####
+#                end do;
+#                if nops(resultCoordinates )<>0 then 
+#                    fprintf(fd, "SurfaceInfo "); fprintf(fd, String(i));fprintf(fd, ":\n");
+#                    fprintf(fd, "vertices:="); fprintf(fd, String(verts)); fprintf(fd, ";\n");    
+#                    fprintf(fd, "\n"); fprintf(fd, "verticesoffaces:="); fprintf(fd, String(vof));fprintf(fd, ";\n");
+#                    for cc in resultCoordinates do  
+#                        fprintf(fd,"-------------------------------------\n");
+#                        fprintf(fd, "Coordinates:="); fprintf(fd, String(co));fprintf(fd, ";\n");
+#                    end do; 
+#                    fprintf(fd,"-------------------------------------------------------------------------------------\n");
+#                end if;
+#            end if;
+#        end do;
+#    end do;
+#    fclose(fd);
+#    return res;
+#end proc:
+#
 ###########
 ########### End of Functions to construct database
 ###########
 ################################################################################################
-
