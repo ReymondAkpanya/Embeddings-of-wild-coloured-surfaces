@@ -529,13 +529,13 @@ end proc:
 ###########
 ################################################################################################
 
-ConstructTorusFromCactus:=proc(surface) ## TODO 
+ConstructTorusFromCactus:=proc(surface)
   local g,vertices,res,faces1,faces2,face1,face2,dets,solution,sol,aa,bb,i,j,coor,s,res1,bool,tempSurfaces,bool_mirror,bool_selfint,check_mirror,ss,coord,
   data_identify,f1,f2;
   vertices:=VerticesOfDegreeThree(surface); # exactly two vertices 
   faces1:=FacesOfVertex(surface,vertices[1]);
   faces2:=FacesOfVertex(surface,vertices[2]);
-  tempSurfaces:=[[],[],[]];
+  tempSurfaces:=[[],[]];
   for i in [1,2,3] do
     for j in [1,2,3] do
       face1:=faces1[i]; 
@@ -570,12 +570,10 @@ ConstructTorusFromCactus:=proc(surface) ## TODO
               else 
                 bool_mirror:=true; # surface comes from imposing mirror symetries so nothing to be done 
               fi;
-              if bool_mirror and not(check_mirror) then #impose mirror
+              if bool_mirror then # mirror
                 tempSurfaces[1]:=[op(tempSurfaces[1]),ss]; 
-              elif bool_mirror and check_mirror then #not imposed mirror but still mirror
-                tempSurfaces[2]:=[op(tempSurfaces[2],ss)];
-              elif not(bool_mirror) and check_mirror then  #not imposed mirror, no mirror
-                tempSurfaces[3]:=[op(tempSurfaces[3]),ss];
+              else  #non mirror
+                tempSurfaces[2]:=[op(tempSurfaces[2]),ss];
               end if;  
             end if; 
           end if; 
@@ -584,6 +582,16 @@ ConstructTorusFromCactus:=proc(surface) ## TODO
     end do;
   end do; 
   return tempSurfaces;
+end proc:
+
+ComputeCensus:=proc()
+  local g;
+  files:=["/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti25.g","/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti10.g"];
+  for i from 1 to nops(files) do
+    read files[i];
+    torusfile(surfaces);
+  end do:
+  return true;
 end proc:
 
 #read "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti70.g":
