@@ -103,7 +103,7 @@ end proc:
 
 
 HasSelfIntersections := proc(surface,coor) 
-  local f, e,ee, v, v1, v2, w, w1, mat, sol, matin,ed;
+  local f, e,ee, v, v1, v2, w, w1, mat, sol, matin,ed,det;
   ed:=Edges(surface); 
   for f in Faces(surface) do 
     for e in select(ee -> not (ee[1] in f or ee[2] in f), ed) do 
@@ -113,10 +113,11 @@ HasSelfIntersections := proc(surface,coor)
       w := coor[e[1]]; 
       w1 := coor[e[2]] - coor[e[1]]; 
       mat := (<<v1> | <v2> | <-w1>>); 
-      if verify(evala(Determinant(mat)),0,truefalse)=false then 
+      det:=verify(evala(Determinant(mat)),0,truefalse); print(evalf(Determinant(mat)),det);
+      if det=false then 
         matin := MatrixInverse(mat); 
         sol:=(evala(matin . <w - v>)); 
-          if is(sol[3]>=0) and verify(sol[3]<=1) and is(sol[2]>=0) and is(sol[1]>=0) and is((sol[1] + sol[2]) <= 1) then 
+          if is(sol[3]>=0) and is(sol[3]<=1) and is(sol[2]>=0) and is(sol[1]>=0) and is((sol[1] + sol[2]) <= 1) then 
             return true;
           end if;
       end if; 
@@ -124,6 +125,8 @@ HasSelfIntersections := proc(surface,coor)
   end do; 
   return false;
 end proc:
+
+
 
 
 HasSelfIntersections_old := proc(surface,coor) 
@@ -527,19 +530,12 @@ end proc:
 ################################################################################################
 
 ConstructTorusFromCactus:=proc(surface) ## TODO 
-  local g,vertices,res,faces1,faces2,face1,face2,tPolNonSelfIntImposeMirror,tPolSelfIntImposeMirror,tPolNonSelfIntNonImposeMirror,tPolSelfIntNonImposeMirror,tPolNonSelfInt,tPolSelfInt,
-  dets,solution,sol,aa,bb,i,j,coor,s,res1,bool,tempSurfaces,bool_mirror,bool_selfint,check_mirror,ss,coord,
+  local g,vertices,res,faces1,faces2,face1,face2,dets,solution,sol,aa,bb,i,j,coor,s,res1,bool,tempSurfaces,bool_mirror,bool_selfint,check_mirror,ss,coord,
   data_identify,f1,f2;
   vertices:=VerticesOfDegreeThree(surface); # exactly two vertices 
-  tPolNonSelfIntImposeMirror:=[];
-  tPolSelfIntImposeMirror:=[];
-  tPolNonSelfIntNonImposeMirror:=[];
-  tPolSelfIntNonImposeMirror:=[];
-  tPolNonSelfInt:=[];
-  tPolSelfInt:=[]; ## change the same in paper
   faces1:=FacesOfVertex(surface,vertices[1]);
   faces2:=FacesOfVertex(surface,vertices[2]);
-  tempSurfaces:=[[],[],[],[],[],[]];
+  tempSurfaces:=[[],[],[]];
   for i in [1,2,3] do
     for j in [1,2,3] do
       face1:=faces1[i]; 
@@ -568,24 +564,18 @@ ConstructTorusFromCactus:=proc(surface) ## TODO
               check_mirror:=false;
             end if;  
             if is(EulerCharacteristic(ss)=0) and IsVertexfaithful(coord) then 
-              bool_selfint:=HasSelfIntersections(ss,coord);  print("selfint",bool_selfint);
+                 #bool_selfint:=HasSelfIntersections(ss,coord); 
               if check_mirror then 
                 bool_mirror:=HasMirrorSymmetries(ss); 
               else 
                 bool_mirror:=true; # surface comes from imposing mirror symetries so nothing to be done 
-              fi; 
-              if not(bool_selfint) and bool_mirror and not(check_mirror) then #impose mirror, not selfint
+              fi;
+              if bool_mirror and not(check_mirror) then #impose mirror
                 tempSurfaces[1]:=[op(tempSurfaces[1]),ss]; 
-              elif bool_selfint and bool_mirror and not(check_mirror) then #impose mirror, selfint
-                tempSurfaces[2]:=[op(tempSurfaces[2]),ss];
-              elif not(bool_selfint) and bool_mirror and check_mirror then #not imposed mirror but still mirror, not selfint
-                tempSurfaces[3]:=[op(tempSurfaces[3],ss)];
-              elif bool_selfint and bool_mirror and check_mirror then #not imposed mirror but still mirror,selfint
-                tempSurfaces[4]:=[op(tempSurfaces[4],ss)];
-              elif not(bool_selfint) and not(bool_mirror) and check_mirror then  #not imposed mirror, no mirror, not selfint
-                tempSurfaces[5]:=[op(tempSurfaces[5]),ss];
-              elif bool_selfint and not(bool_mirror) and check_mirror then #not imposed mirror, no mirror, selfint
-                tempSurfaces[6]:=[op(tempSurfaces[6]),ss];
+              elif bool_mirror and check_mirror then #not imposed mirror but still mirror
+                tempSurfaces[2]:=[op(tempSurfaces[2],ss)];
+              elif not(bool_mirror) and check_mirror then  #not imposed mirror, no mirror
+                tempSurfaces[3]:=[op(tempSurfaces[3]),ss];
               end if;  
             end if; 
           end if; 
@@ -593,13 +583,7 @@ ConstructTorusFromCactus:=proc(surface) ## TODO
       end if;
     end do;
   end do; 
-  tPolNonSelfIntImposeMirror:=IsometryRepresentatives(tempSurfaces[1]); 
-  tPolSelfIntImposeMirror:=IsometryRepresentatives(tempSurfaces[2]); 
-  tPolNonSelfIntNonImposeMirror:=IsometryRepresentatives(tempSurfaces[3]); 
-  tPolSelfIntNonImposeMirror:=IsometryRepresentatives(tempSurfaces[4]); 
-  tPolNonSelfInt:=IsometryRepresentatives(tempSurfaces[5]); 
-  tPolSelfInt:=IsometryRepresentatives(tempSurfaces[6]); 
-  return tPolNonSelfIntImposeMirror,tPolSelfIntImposeMirror,tPolNonSelfIntNonImposeMirror,tPolSelfIntNonImposeMirror,tPolNonSelfInt,tPolSelfInt; #tPolNonSelfIntMirror,tPolSelfIntMirror,tPolNonSelfInt,tPolSelfInt;
+  return tempSurfaces;
 end proc:
 
 #read "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti70.g":
@@ -616,6 +600,34 @@ end proc:
 ###########
 ########### Beginning of Functions to construct database
 ###########
+
+torusfile:=proc(surfaces)
+local i,j,cac,res,fd,tfile,l,L,nrFaces,co,filename;
+filename:=["toriWithMirrorSymmetriesWith","toriWithoutMirrorSymmetriesWith"];
+for i from 1 to nops(surfaces) do
+    cac := ConstructCactus(surfaces[i]); print("i", i);
+    L := ConstructTorusFromCactus(cac);    
+    for j from 1 to 2 do
+    	if nops(L[j])<>0 then
+    		nrFaces:=nops(Faces(L[j][1]));
+    		tfile:=cat(filename[j],convert(nrFaces,string),"Faces");
+		fd := fopen(tfile, APPEND);
+		fprintf(fd, "###################################################################################################################################### \n"); 
+    		fprintf(fd, "SurfaceInfo:="); fprintf(fd, String(i)); fprintf(fd, ":\n");
+    		fprintf(fd, "VerticesOfFaces:="); fprintf(fd, String(Faces(L[j][1]))); fprintf(fd, ";\n");
+    		fprintf(fd, "Vertices:="); fprintf(fd, String(Vertices(L[j][1]))); fprintf(fd, ";\n");
+    		for l from 1 to nops(L[j]) do
+    			fprintf(fd, "##############################################################\n");
+    			co:=evala(CoordinateMatrix(L[j][l],1,"listlist"=true,"radical"=true));
+    			fprintf(fd, "coordinates_num:="); fprintf(fd, String(evalf(co))); fprintf(fd, ";\n");
+    			fprintf(fd, "coordinates:="); fprintf(fd, String(co)); fprintf(fd, ";\n");
+    		end do;
+		fclose(fd);
+	end if ;
+    end do; 
+end do;
+end proc:
+
 
 #torusfile_new:=proc(surfaces,filename)
 #    local i,j,fd,cac,solution,k,co,verts,vof,res,s,id,resultCoordinates,cc;
