@@ -585,7 +585,7 @@ ConstructTorusFromCactus:=proc(surface)
 end proc:
 
 ComputeCensus:=proc()
-  local g;
+  local g,files,i;
   files:=["/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti25.g","/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti10.g"];
   for i from 1 to nops(files) do
     read files[i];
