@@ -42,7 +42,7 @@ end proc:
 
 EqForFacesInSamePlane := proc(surface, face1, face2) 
   local c, v11, v12, v13, v21, v22, v23, d1, d2, d3;
-  c := simplify(CoordinateMatrix(surface, 1, "listlist" = true, "radical"=false)); 
+  c := evala(CoordinateMatrix(surface, 1, "listlist" = true, "radical"=false)); #simplify
   v11 := c[face1[1]]; 
   v12 := c[face1[2]]; 
   v13 := c[face1[3]]; 
@@ -74,6 +74,25 @@ pos:=proc(l,x)
     end if;
   od;
   return false;
+end proc:
+
+#new solve function
+custom_solve:=proc(L,var)
+local g,i,j,eq,ineq,num,den,sol;
+eq:=[];
+ineq:=[];
+for i from 1 to nops(L) do
+    num:=numer(L[i]);
+    den:=denom(L[i]);
+    eq:=[op(eq),num];
+    ineq:=[op(ineq),den];
+end do;
+if eq=[0 $nops(eq)] then
+  return [];
+else
+  sol:=`SimplicialSurfaceEmbeddings/solve_polynomial_system`(eq,var,ineq,[]);
+  return sol[1];
+fi;
 end proc:
 ###########
 ########### End of Helperfunctions
@@ -113,7 +132,7 @@ HasSelfIntersections := proc(surface,coor)
       w := coor[e[1]]; 
       w1 := coor[e[2]] - coor[e[1]]; 
       mat := (<<v1> | <v2> | <-w1>>); 
-      det:=verify(evala(Determinant(mat)),0,truefalse); print(evalf(Determinant(mat)),det);
+      det:=verify(evala(Determinant(mat)),0,truefalse); #print(evalf(Determinant(mat)),det);
       if det=false then 
         matin := MatrixInverse(mat); 
         sol:=(evala(matin . <w - v>)); 
@@ -214,7 +233,7 @@ end proc:
 HasMirrorSymmetries:=proc(surface)
   local g,coor,edges,vec1,vec2,vec3,M,scalars,sc,bool,wings,faces,vertices,posScalars,negScalars,c,i,v,e;
   #print("starting mirror");
-  coor:=simplify(CoordinateMatrix(surface,1,"vertices"=[$1..nops(Vertices(surface))],"listlist"=true, "radical"=false));
+  coor:=evala(CoordinateMatrix(surface,1,"vertices"=[$1..nops(Vertices(surface))],"listlist"=true, "radical"=false)); #simplify
   edges:=Edges(surface);
   faces:=Faces(surface);
   vertices:=Vertices(surface);
@@ -366,7 +385,7 @@ end proc:
 ###########
 
 AddTetra := proc(surf, i, vert, f)
-  local g, c, v, v1, v2, v3, n, sol, vv,coor; 
+  local g, c, v, v1, v2, v3, n, sol, vv,coor,eq; 
   coor:=CoordinateMatrix(surf,i,"listlist"=true, "radical"=false); 
   v := <coor[f[1]]>;
   v1 := <coor[f[2]]> - <coor[f[1]]>;
@@ -374,8 +393,10 @@ AddTetra := proc(surf, i, vert, f)
   n := CrossProduct(v1, v2);
   v3 := <coor[vert]>; #print(v1,v2);
   vv := [t*n[1] + v3[1], t*n[2] + v3[2], t*n[3] + v3[3]];
-  sol := solve(n[1]*vv[1] + n[2]*vv[2] + n[3]*vv[3] = v[1]*n[1] + v[2]*n[2] + v[3]*n[3], {t}); 
-  return subs(sol, [2*t*n[1] + v3[1], 2*t*n[2] + v3[2], 2*t*n[3] + v3[3]]); 
+  eq:=(n[1]*vv[1] + n[2]*vv[2] + n[3]*vv[3]) -( v[1]*n[1] + v[2]*n[2] + v[3]*n[3]);
+  sol:=custom_solve([eq],[t]); 
+  #sol := solve(n[1]*vv[1] + n[2]*vv[2] + n[3]*vv[3] = v[1]*n[1] + v[2]*n[2] + v[3]*n[3], {t}); #print(subs(sol, [2*t*n[1] + v3[1], 2*t*n[2] + v3[2], 2*t*n[3] + v3[3]]));
+  return map(s->subs(s, [2*t*n[1] + v3[1], 2*t*n[2] + v3[2], 2*t*n[3] + v3[3]]),sol)[1]; 
   end proc:
 
 
@@ -421,7 +442,7 @@ end proc:
 ########### Beginning of TorusConstruction
 ###########
 MirrorSimplicialSurface:=proc(surface,face1,face2)  ### formally Mirror for torus 
-  local i,j,v1,v2,v3,w1,w2,w3,vec1,vec2,normalvec,ww,kk,eqn_of_plane,verts,verts_of_faces1_2,vert_to_reflect,L,m,cc,newfac,maxvert,fac,f,surf,placeholder,reflected_verts,temp,jj,ij,n;  
+  local i,j,v1,v2,v3,w1,w2,w3,vec1,vec2,normalvec,ww,kk,eqn_of_plane,verts,verts_of_faces1_2,vert_to_reflect,L,m,cc,newfac,maxvert,fac,f,surf,placeholder,reflected_verts,temp,jj,ij,n,temp1;  
   cc:=CoordinateMatrix(surface,1,"listlist"=true, "radical"=false);
   v1 := cc[face1[1]];
   v2 := cc[face1[2]];
@@ -432,10 +453,10 @@ MirrorSimplicialSurface:=proc(surface,face1,face2)  ### formally Mirror for toru
   vec1 := Vector(v2 - v1);
   vec2 := Vector(w2 - v1);
   normalvec := CrossProduct(vec1, vec2);
-  ww := x*normalvec[1] + y*normalvec[2] + z*normalvec[3] + k = 0;
+  ww := x*normalvec[1] + y*normalvec[2] + z*normalvec[3] + k;
   kk := subs([x = v3[1], y = v3[2], z = v3[3]], ww);
-  solve(kk);
-  eqn_of_plane := subs(k = %, ww);
+  temp:=custom_solve([kk],[k]); #print("here"); #solve(kk); #print("temp1",temp1);
+  eqn_of_plane := subs(temp[1], ww); #eqn_of_plane := subs(k = %, ww);
   verts := Vertices(surface);
   verts_of_faces1_2 := {op(face1), op(face2)};
   vert_to_reflect := convert({op(verts)} minus verts_of_faces1_2, list);
@@ -535,20 +556,21 @@ ConstructTorusFromCactus:=proc(surface)
   vertices:=VerticesOfDegreeThree(surface); # exactly two vertices 
   faces1:=FacesOfVertex(surface,vertices[1]);
   faces2:=FacesOfVertex(surface,vertices[2]);
-  tempSurfaces:=[[],[]];
+  tempSurfaces:=[[],[]]; #print(evala(CoordinateMatrix(surface,1,"listlist"=true,"radical"=false)));
   for i in [1,2,3] do
     for j in [1,2,3] do
-      face1:=faces1[i]; 
-      face2:=faces2[j]; 
+      face1:=faces1[i];
+      face2:=faces2[j];  print(face1,face2);
       if nops({op(face1)} intersect {op(face2)})=0 and not(HasEdgeInPlane(surface, face1, face2)) then 
         dets:=EqForFacesInSamePlane(surface,face1,face2);
-        solution := solve([dets[1] = 0, dets[2] = 0, dets[3] = 0],{a,b}); #print(nops([solution]),solution);
-        #solution:=op(map(m->allvalues(solution[m],'implicit'),[$1..nops([solution])])); #print(nops([solution]),solution);
+        solution := custom_solve([dets[1], dets[2], dets[3]],[a,b]); ##new
+        #solution := solve([dets[1] = 0, dets[2] = 0, dets[3] = 0],{a,b}); 
+        #solution:=op(map(m->allvalues(solution[m],'implicit'),[$1..nops([solution])])); #print(nops([solution]));
         for sol in solution do #print("check1");
           aa:=subs(sol,a);
           bb:=subs(sol,b); 
-          if type(evalf(aa),float) and type(evalf(bb),float) and aa<>0 and bb<> 0 then 
-            coor:=simplify(subs({a=aa,b=bb},CoordinateMatrix(surface,1,"listlist"=true,"radical"=false)));  
+          if type(evalf(aa),float) and type(evalf(bb),float) and aa<>0 and bb<> 0 then #print("aa","bb");
+            coor:=evala(subs({a=aa,b=bb},CoordinateMatrix(surface,1,"listlist"=true,"radical"=false)));  #no simplify here!!!!
             s:=NewSurface();
             DefineEmbedding(s,coor,"faces"=Faces(surface),"vertices"= Vertices(surface));
             data_identify:=HasIdentifiedFaces(s,face1,face2); 
@@ -556,11 +578,11 @@ ConstructTorusFromCactus:=proc(surface)
               f1:=data_identify[2];
               f2:=data_identify[3]; 
               ss:=IdentifyFaces(s,f1,f2); 
-              coord := simplify(CoordinateMatrix(ss,1,"listlist"=true, "radical"=false));
+              coord := evala(CoordinateMatrix(ss,1,"listlist"=true, "radical"=false)); #simplify
               check_mirror:=true;
             else
-              ss:=MirrorSimplicialSurface(s,face1,face2); 
-              coord := simplify(CoordinateMatrix(ss,1,"listlist"=true, "radical"=false));
+              ss:=MirrorSimplicialSurface(s,face1,face2); print("here");
+              coord := evala(CoordinateMatrix(ss,1,"listlist"=true, "radical"=false)); #simplify
               check_mirror:=false;
             end if;  
             if is(EulerCharacteristic(ss)=0) and IsVertexfaithful(coord) then 
@@ -678,3 +700,9 @@ end proc:
 ########### End of Functions to construct database
 ###########
 ################################################################################################
+
+
+
+
+#'SimplicialSurfaceEmbeddings/solve_polynomial_system'([x+y,y+3,RootOf(x^2 - 2)],[x,y],[],indets(RootOf(x^2 - 2), algext));
+
