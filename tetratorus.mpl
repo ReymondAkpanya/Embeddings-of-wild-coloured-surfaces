@@ -556,16 +556,16 @@ ConstructTorusFromCactus:=proc(surface)
   vertices:=VerticesOfDegreeThree(surface); # exactly two vertices 
   faces1:=FacesOfVertex(surface,vertices[1]);
   faces2:=FacesOfVertex(surface,vertices[2]);
-  tempSurfaces:=[[],[]]; #print(evala(CoordinateMatrix(surface,1,"listlist"=true,"radical"=false)));
+  tempSurfaces:=[[],[]];
   for i in [1,2,3] do
     for j in [1,2,3] do
       face1:=faces1[i];
       face2:=faces2[j];
       if nops({op(face1)} intersect {op(face2)})=0 and not(HasEdgeInPlane(surface, face1, face2)) then 
-        dets:=EqForFacesInSamePlane(surface,face1,face2);
+        dets:=EqForFacesInSamePlane(surface,face1,face2); print(face1, " and ",face2);print("dets=",dets);
         solution := custom_solve([dets[1], dets[2], dets[3]],[a,b]); ##new
         #solution := solve([dets[1] = 0, dets[2] = 0, dets[3] = 0],{a,b}); 
-        #solution:=op(map(m->allvalues(solution[m],'implicit'),[$1..nops([solution])])); #print(nops([solution]));
+        #solution:=op(map(m->allvalues(solution[m],'implicit'),[$1..nops([solution])])); 
         for sol in solution do #print("check1");
           aa:=subs(sol,a);
           bb:=subs(sol,b); 
@@ -576,11 +576,11 @@ ConstructTorusFromCactus:=proc(surface)
             data_identify:=HasIdentifiedFaces(s,face1,face2); 
             if data_identify[1] then
               f1:=data_identify[2];
-              f2:=data_identify[3]; 
+              f2:=data_identify[3]; print("identify");
               ss:=IdentifyFaces(s,f1,f2); 
               coord := evala(CoordinateMatrix(ss,1,"listlist"=true, "radical"=false)); #simplify
               check_mirror:=true;
-            else
+            else print("mirror");
               ss:=MirrorSimplicialSurface(s,face1,face2); 
               coord := evala(CoordinateMatrix(ss,1,"listlist"=true, "radical"=false)); #simplify
               check_mirror:=false;
@@ -615,17 +615,18 @@ end proc:
 ###########
 
 torusfile:=proc(surfaces,k)
-    local i,j,cac,res,fd,tfile,l,L,nrFaces,co,filename,counter,nr;
+    local i,j,cac,res,fd,tfile,l,L,nrFaces,co,filename,counter,nr,temp;
+    temp:="/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/final output files/";
     filename:=["toriWithMirrorSymmetriesWith","toriWithoutMirrorSymmetriesWith"];
     counter:=[0,0];
     for i from k to nops(surfaces) do
         cac := ConstructCactus(surfaces[i]); print("i", i);
-        L := ConstructTorusFromCactus(cac);    
+        L := ConstructTorusFromCactus(cac);  
         for j from 1 to 2 do
     	    if nops(L[j])<>0 then
-    		nrFaces:=nops(Faces(L[j][1]));
+    		nrFaces:=nops(Faces(L[j][1])); print("found solutions\n");
     		nr:=(counter[j]-(counter[j] mod 10))/10;
-    		tfile:=cat(filename[j],convert(nrFaces,string),"Faces_",convert(nr,string));
+    		tfile:=cat(temp,filename[j],convert(nrFaces,string),"Faces_",convert(nr+1,string));
 		fd := fopen(tfile, APPEND);
 		fprintf(fd, "###################################################################################################################################### \n"); 
     		fprintf(fd, "SurfaceInfo:="); fprintf(fd, String(i)); fprintf(fd, ":\n");
@@ -638,6 +639,7 @@ torusfile:=proc(surfaces,k)
     			fprintf(fd, "coordinates:="); fprintf(fd, String(co)); fprintf(fd, ";\n");
     		end do;
 		fclose(fd);
+		counter[j]:=counter[j]+1;
 	    end if ;
         end do; 
     end do;
