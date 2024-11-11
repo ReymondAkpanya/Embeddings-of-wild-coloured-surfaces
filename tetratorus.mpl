@@ -562,7 +562,7 @@ ConstructTorusFromCactus:=proc(surface)
       face1:=faces1[i];
       face2:=faces2[j];
       if nops({op(face1)} intersect {op(face2)})=0 and not(HasEdgeInPlane(surface, face1, face2)) then 
-        dets:=EqForFacesInSamePlane(surface,face1,face2); print(face1, " and ",face2);print("dets=",dets);
+        dets:=EqForFacesInSamePlane(surface,face1,face2); #print(face1, " and ",face2);print("dets=",dets);
         solution := custom_solve([dets[1], dets[2], dets[3]],[a,b]); ##new
         #solution := solve([dets[1] = 0, dets[2] = 0, dets[3] = 0],{a,b}); 
         #solution:=op(map(m->allvalues(solution[m],'implicit'),[$1..nops([solution])])); 
@@ -576,11 +576,11 @@ ConstructTorusFromCactus:=proc(surface)
             data_identify:=HasIdentifiedFaces(s,face1,face2); 
             if data_identify[1] then
               f1:=data_identify[2];
-              f2:=data_identify[3]; print("identify");
+              f2:=data_identify[3]; #print("identify");
               ss:=IdentifyFaces(s,f1,f2); 
               coord := evala(CoordinateMatrix(ss,1,"listlist"=true, "radical"=false)); #simplify
               check_mirror:=true;
-            else print("mirror");
+            else #print("mirror");
               ss:=MirrorSimplicialSurface(s,face1,face2); 
               coord := evala(CoordinateMatrix(ss,1,"listlist"=true, "radical"=false)); #simplify
               check_mirror:=false;
@@ -615,10 +615,13 @@ end proc:
 ###########
 
 torusfile:=proc(surfaces,k)
-    local i,j,cac,res,fd,tfile,l,L,nrFaces,co,filename,counter,nr,temp;
-    temp:="/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/final output files/";
+    local i,j,cac,res,fd,tfile,l,L,nrFaces,co,filename,counter,nr,temp,str,tfile2,approxfile,fd2,num;
+    temp:="/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Output_files_new/";
     filename:=["toriWithMirrorSymmetriesWith","toriWithoutMirrorSymmetriesWith"];
+    approxfile:=["approximationWithMirrorSymmetriesWith","approximationWithoutMirrorSymmetriesWith"];
     counter:=[0,0];
+    #fd2:= fopen(tfile2, APPEND);
+    #fprintf(fd, "surfaces:=[\n");
     for i from k to nops(surfaces) do
         cac := ConstructCactus(surfaces[i]); print("i", i);
         L := ConstructTorusFromCactus(cac);  
@@ -627,37 +630,50 @@ torusfile:=proc(surfaces,k)
     		nrFaces:=nops(Faces(L[j][1])); print("found solutions\n");
     		nr:=(counter[j]-(counter[j] mod 10))/10;
     		tfile:=cat(temp,filename[j],convert(nrFaces,string),"Faces_",convert(nr+1,string));
-		fd := fopen(tfile, APPEND);
-		fprintf(fd, "###################################################################################################################################### \n"); 
+    		tfile2:=cat(temp,approxfile[j],convert(nrFaces,string),"Faces_",convert(nr+1,string));
+		    fd := fopen(tfile, APPEND);
+		    fd2 := fopen(tfile2, APPEND);
+		    fprintf(fd, "###################################################################################################################################### \n"); 
     		fprintf(fd, "SurfaceInfo:="); fprintf(fd, String(i)); fprintf(fd, ":\n");
     		fprintf(fd, "VerticesOfFaces:="); fprintf(fd, String(Faces(L[j][1]))); fprintf(fd, ";\n");
     		fprintf(fd, "Vertices:="); fprintf(fd, String(Vertices(L[j][1]))); fprintf(fd, ";\n");
     		for l from 1 to nops(L[j]) do
+    		## output for maple 
     			fprintf(fd, "##############################################################\n");
     			co:=evala(CoordinateMatrix(L[j][l],1,"listlist"=true,"radical"=true));
-    			fprintf(fd, "coordinates_num:="); fprintf(fd, String(evalf(co))); fprintf(fd, ";\n");
+    			num:=String(evalf(co));
+    			fprintf(fd, "coordinates_num:="); fprintf(fd, num); fprintf(fd, ";\n");
     			fprintf(fd, "coordinates:="); fprintf(fd, String(co)); fprintf(fd, ";\n");
+    			## output for gap
+    			fprintf(fd2, "[");
+    			fprintf(fd2, String(Faces(L[j][1])));fprintf(fd2, ",");
+    			fprintf(fd2, num);
+    			fprintf(fd2, "],\n \n");
+    			
     		end do;
 		fclose(fd);
+		fclose(fd2);
 		counter[j]:=counter[j]+1;
 	    end if ;
         end do; 
     end do;
+
 end proc:
+
 
 ComputeCensus:=proc()
   local g,files,i;
-  files:=["/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/Cacti1.g",
-  	  "/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/Cacti2.g",
-  	  "/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/Cacti4.g",
-  	  "/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/Cacti10.g",
-  	  "/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/Cacti25.g",
-  	  "/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/Cacti70.g",
-  	  "/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/Cacti196.g",
-  	  "/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/Cacti574.g",
-  	  "/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/Cacti1681.g",
-  	  "/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/Cacti5002.g",
-  	  "/home/data/akpanya/Embeddings-of-wild-coloured-surfaces/Cacti14884.g"
+  files:=["/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti1.g",
+  	  "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti2.g",
+  	  "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti4.g",
+  	  "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti10.g",
+  	  "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti25.g",
+  	  "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti70.g",
+  	  "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti196.g",
+  	  "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti574.g",
+  	  "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti1681.g",
+  	  "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti5002.g",
+  	  "/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Cacti14884.g"
          ];
   for i from 1 to nops(files) do
     read files[i];
