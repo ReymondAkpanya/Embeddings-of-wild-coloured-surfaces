@@ -122,9 +122,33 @@ end proc:
 
 
 HasSelfIntersections := proc(surface,coor) 
-  local f, e,ee, v, v1, v2, w, w1, mat, sol, matin,ed,det;
+  local f, e,ee, v, v1, v2, w, w1, mat, sol, matin,ed,det,faces,vertices,ww,vv,n_norm,n;
   ed:=Edges(surface); 
-  for f in Faces(surface) do 
+  vertices:=Vertices(surface);
+  faces:=Faces(surface);
+  ### find vertices that are contained in triangels 
+  for f in faces do 
+    for ww in select(vv -> not (vv in f ), vertices) do 
+      v := coor[f[1]]; 
+      v1 := <coor[f[2]] - coor[f[1]]>; 
+      v2 := <coor[f[3]] - coor[f[1]]>; 
+      n:= CrossProduct(v1,v2);#print(v1,v2,n);
+      w:=coor[ww];
+      mat := (<v1 | v2 | n>); 
+      matin := MatrixInverse(mat); 
+      sol:=(evala(matin . <w - v>)); 
+      if is(sol[3]=0) then 
+        if is(sol[2]>=0) and is(sol[1]>=0) and is((sol[1] + sol[2]) <= 1) then 
+          return true;
+        end if;
+      end if;
+    end do; 
+  end do; 
+  
+  print("vertices no problem");
+  
+  
+  for f in faces do 
     for e in select(ee -> not (ee[1] in f or ee[2] in f), ed) do 
       v := coor[f[1]]; 
       v1 := coor[f[2]] - coor[f[1]]; 
@@ -132,8 +156,8 @@ HasSelfIntersections := proc(surface,coor)
       w := coor[e[1]]; 
       w1 := coor[e[2]] - coor[e[1]]; 
       mat := (<<v1> | <v2> | <-w1>>); 
-      det:=verify(evala(Determinant(mat)),0,truefalse); #print(evalf(Determinant(mat)),det);
-      if det=false then 
+      det:=evala(Determinant(mat));
+      if not is(det,0) then 
         matin := MatrixInverse(mat); 
         sol:=(evala(matin . <w - v>)); 
           if is(sol[3]>=0) and is(sol[3]<=1) and is(sol[2]>=0) and is(sol[1]>=0) and is((sol[1] + sol[2]) <= 1) then 
@@ -617,8 +641,8 @@ end proc:
 torusfile:=proc(surfaces,k)
     local i,j,cac,res,fd,tfile,l,L,nrFaces,co,filename,counter,nr,temp,str,tfile2,approxfile,fd2,num;
     temp:="/export3/home/tmp/maple_vani/Embeddings-of-wild-coloured-surfaces/Output_files_new/";
-    filename:=["toriWithMirrorSymmetriesWith","toriWithoutMirrorSymmetriesWith"];
-    approxfile:=["approximationWithMirrorSymmetriesWith","approximationWithoutMirrorSymmetriesWith"];
+    filename:=["LasttoriWithMirrorSymmetriesWith","LasttoriWithoutMirrorSymmetriesWith"];
+    approxfile:=["LastapproximationWithMirrorSymmetriesWith","LastapproximationWithoutMirrorSymmetriesWith"];
     counter:=[0,0];
     #fd2:= fopen(tfile2, APPEND);
     #fprintf(fd, "surfaces:=[\n");
@@ -683,44 +707,6 @@ ComputeCensus:=proc()
 end proc:
 
 
-
-#torusfile_new:=proc(surfaces,filename)
-#    local i,j,fd,cac,solution,k,co,verts,vof,res,s,id,resultCoordinates,cc;
-#    res:=[];
-#    fd := fopen(filename, WRITE);
-#    cac:=map(j->ConstructCactus(j),surfaces);
-#    for id in [1,2,3,4] do
-#        for i from 1 to nops(cac) do
-#            solution:=findPossibleTetraTorus([cac[i]],id)[1];
-#            if nops(solution)<>0 then
-#                verts:= Vertices(op(solution[j][1])):print("found solution\n");
-#                vof:=Faces(op(solution[j][1]));
-#                resultCoordinates:=[];### 
-#                for k from 1 to nops(solution[j][2]) do
-#                    co:=subs({a = subs(solution[j][2][k], a), b = subs(solution[j][2][k], b)}, CoordinateMatrix(op(solution[j][1]), 1, "listlist" = true, "radical"=false));
-#                    s:=NewSurface();
-#                    DefineEmbedding(s,co,"vertices"=verts,"faces"=vof);         
-#                    ####tests
-#                    ## all algebraic solutions are stored in tempRes 
-#                    ####
-#                end do;
-#                if nops(resultCoordinates )<>0 then 
-#                    fprintf(fd, "SurfaceInfo "); fprintf(fd, String(i));fprintf(fd, ":\n");
-#                    fprintf(fd, "vertices:="); fprintf(fd, String(verts)); fprintf(fd, ";\n");    
-#                    fprintf(fd, "\n"); fprintf(fd, "verticesoffaces:="); fprintf(fd, String(vof));fprintf(fd, ";\n");
-#                    for cc in resultCoordinates do  
-#                        fprintf(fd,"-------------------------------------\n");
-#                        fprintf(fd, "Coordinates:="); fprintf(fd, String(co));fprintf(fd, ";\n");
-#                    end do; 
-#                    fprintf(fd,"-------------------------------------------------------------------------------------\n");
-#                end if;
-#            end if;
-#        end do;
-#    end do;
-#    fclose(fd);
-#    return res;
-#end proc:
-#
 ###########
 ########### End of Functions to construct database
 ###########
