@@ -227,10 +227,10 @@ AreIsometricPolyhedra:=proc(s1, s2)
   b1:=Barycenter(s1,1);
   b2:=Barycenter(s2,1);
   M1:=Matrix(map(i-><i-b1>,coor1));
-  M2:=Matrix(map(i-><i-b1>,coor2));
+  M2:=Matrix(map(i-><i-b2>,coor2));
   gram1:=Transpose(M1).M1;
-  gram2:=Transpose(M2).M2;
-  return Equal(gram1,gram2);
+  gram2:=Transpose(M2).M2; 
+  return Equal(evala(gram1),evala(gram2));
 end proc:
 
 IsometryRepresentatives:=proc(surfaceList) ## new 
