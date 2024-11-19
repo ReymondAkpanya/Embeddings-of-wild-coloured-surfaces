@@ -1,18 +1,9 @@
-# Embeddings-of-wild-coloured-surfaces
+Example pictures are in html folder
 
-## TODOs
+findCacti.g is the GAP file to find multitetrahedral spheres for a given number of faces.
 
-- intersection testing
-- Common vertex testing 
-- apply theory to icosaehdron etc.
-- Smallest tetra torus without intersection
-- For a fixed h, check how many solutions of 'a' exist. 
-- Using: 1. Coeffs in b and poly in a and taking out leading coeffs. 2. Looking at discriminant.
-- Complete Octahedra mmr structure.
+Cacti1 .gto Cacti14884.g are the output files from findCacti.g
 
+tetratorus.mpl is the Maple file which computes the toroidal polyhedra.
 
-### Website to enumerate different graphs 
-- http://combos.org/plantri
-
-###Website to visualize different polyhedrons
-https://polyhedra.tessera.li/
+The resulting toroidal polyhedra from tetratorus.mpl are in the folder final output files
